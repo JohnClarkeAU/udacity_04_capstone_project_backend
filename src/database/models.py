@@ -11,6 +11,7 @@ database_path = "sqlite:///{}".format(os.path.join(project_dir, database_filenam
 
 db = SQLAlchemy()
 
+# ###################################################################
 def setup_db(app):
     '''
     Binds a flask application and a SQLAlchemy service.
@@ -20,6 +21,14 @@ def setup_db(app):
     db.app = app
     db.init_app(app)
 
+# ###################################################################
+def db_rollback():
+    '''
+    Rollbacks the database in the event of an error while updating/deleting
+    '''
+    db.session.rollback()
+
+# ###################################################################
 def db_drop_and_create_all():
     '''
     Drops the database tables and starts a fresh database.
@@ -93,13 +102,7 @@ def db_drop_and_create_all():
     )
     student.insert()
 
-def db_rollback():
-    '''
-    Rollbacks the database in the event of an error while updating/deleting
-    '''
-    db.session.rollback()
-
-
+# ###################################################################
 class Class(db.Model):
     '''
     Class - a persistent Class entity, extends the base SQLAlchemy Model.
@@ -180,7 +183,7 @@ class Class(db.Model):
         db.session.delete(self)
         db.session.commit()
 
-
+# ###################################################################
 class Student(db.Model):
     '''
     Student - a persistent Student entity, extends the base SQLAlchemy Model.
@@ -189,7 +192,8 @@ class Student(db.Model):
     id = Column(Integer().with_variant(Integer, "sqlite"), primary_key=True)
     class_id = Column(Integer().with_variant(Integer, "sqlite"), db.ForeignKey('class.id'), nullable=False)
     # String Name
-    name = Column(String(80), unique=True)
+    # name = Column(String(80), unique=True)
+    name = Column(String(80))
     # the results
     # the required datatype is a two dimension list representing processing two numbers together
     # [ [1+1, 1+2, 1+3, ...], [2+1, 2+2, 2+3, ...], etc]

@@ -285,9 +285,9 @@ The following endpoints are accepted by the API
     GET    '/students'               # Gets a list of students in short format
     GET    '/students-detail'        # Gets a list of students in long format
     GET    '/students/<students_id>' # Gets a student in long format
+    DELETE '/students/<students_id>' # Deletes a student
     POST   '/students'               # Adds a new student in long format
     PATCH  '/students/<students_id>' # Amends a student
-    DELETE '/students/<students_id>' # Deletes a student
 
 ---
 ### GET '/'
@@ -433,8 +433,9 @@ curl  ${TEST_HOST}/students-detail -H 'Accept: application/json' -H "Authorizati
 #### curl
 ```bash
 curl  ${TEST_HOST}/students/<id> -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}"
-
+```
 #### response
+
 ```json
 {
     "students":
@@ -513,10 +514,12 @@ curl -X DELETE ${TEST_HOST}/students/1 -H 'Accept: application/json' -H "Authori
 ### POST '/students'
 POST /students is an endpoint to create a new row in the students table.
 
-This is used to add a new student to the students table using the data
-supplied in the student.long() data representation.
+This is used to add a new student to the students table in the long format using the data
+supplied (class_id and student name).  The results are all set to 0.
 
-A student with the same title must not already be in the students table.
+A student with the same name must not already be in the class.
+
+If the class_id is not known, use class_id of 1, being the "unallocated class".
 
 Requires the 'post:students' permission.
 
@@ -532,10 +535,74 @@ Returns
 #### curl to to add a student
 ```bash
 curl -X POST ${TEST_HOST}/students -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}" -H "Content-Type:application/json" -d '{"class_id":1,"name":"Test POSTED Student4 Class1"}'
-
-curl -X POST ${TEST_HOST}/students -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}" -H "Cont
-ent-Type:application/json" -d '{"title":"Water3","recipe":[{"name":"Water","color":"blue","parts":1}]}'
 ```
+#### response
+```json
+{
+    "students":
+    [
+        {
+            "id":4,
+            "class_id":1,
+            "name":"Test POSTED Student4 Class1",
+            "addresults":[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]],
+            "divresults":[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]],
+            "mulresults":[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]],
+            "subresults":[[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0],[0,0,0,0,0,0,0,0,0,0]]
+        }
+    ],
+    "success":true
+}
+```
+#### curl to generate an error
+The students details are not supplied
+```bash
+curl  -X POST ${TEST_HOST}/students -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}"
+```
+#### error response
+```json
+{
+  "error":400,
+  "message":"400 Bad Request: Missing input field(s). (name and class_id are required.)",
+  "success":false
+}
+```
+#### other errors
+```json
+{
+    "error": 400,
+    "message": "400 Bad Request: Cannot add 'Test POSTED Student4 Class1'. That student already exists in the class.",
+    "success": false
+}```
+
+---
+### PATCH '/students'
+
+PATCH /students/<id> is an endpoint to update the corresponding row for <id>.
+
+This is used to amend a student in the students table using the data
+supplied in the student.long() data representation.
+
+A student with the same <id> must already be in the students table otherwise a
+404 error is returned if <id> is not found in the students table.
+
+Requires the 'patch:students' permission.
+
+Returns
+    status code 200 and json {"success": True, "students": student}
+        where student is an array containing only the updated student
+    status code 400 if there is an error in the submitted data
+    status code 400 if there are no permissions in the JWT
+    status code 401 if the user does not have permission to do this
+    status code 404 if <id> is not found in the database
+    status code 422 if there is a database error
+
+
+#### curl to to amend a students class_id
+```bash
+curl -X PATCH ${TEST_HOST}/students/4 -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}" -H "Content-Type:application/json" -d '{"class_id":2}'
+```
+
 #### response
 ```json
 {
@@ -549,12 +616,39 @@ ent-Type:application/json" -d '{"title":"Water3","recipe":[{"name":"Water","colo
           "parts":1
         }
       ],
-      "title":"Water3"
+      "title":"Patched Title Water5"
     }
   ],
   "success":true
 }
 ```
+
+#### curl to to amend a student title and recipe
+```bash
+curl -X PATCH ${TEST_HOST}/students/2 -H 'Accept: application/json' -H "Authorization: Bearer ${TEST_TOKEN}" -H "C 
+ontent-Type:application/json" -d '{"title":"Patched Title Water6","recipe":[{"name":"Patched Water","color":"blue","parts":2}]}'
+```
+
+#### response
+```json
+{
+  "students":[
+    {
+      "id":2,
+      "recipe":[
+        {
+          "color":"blue",
+          "name":"Patched Water",
+          "parts":2
+        }
+      ],
+      "title":"Patched Title Water6"
+    }
+  ],
+  "success":true
+}
+```
+
 #### curl to generate an error
 The students details are not supplied
 ```bash
